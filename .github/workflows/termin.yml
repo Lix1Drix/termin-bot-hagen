@@ -1,0 +1,59 @@
+name: Termin-Bot Hagen
+
+on:
+  # Automatisch alle 5 Minuten (GitHub kann es etwas verzoegern -> real ca. 5-15 Min)
+  schedule:
+    - cron: '*/5 * * * *'
+  # Manuell startbar (mit optionaler Test-Nachricht aufs Handy)
+  workflow_dispatch:
+    inputs:
+      test_ping:
+        description: 'Test-Nachricht an Telegram senden?'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+# Verhindert, dass sich ueberlappende Laeufe stapeln
+concurrency:
+  group: termin-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code holen
+        uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Bibliothek installieren
+        run: pip install --quiet requests
+
+      - name: Merker laden (gegen Doppel-Benachrichtigung)
+        uses: actions/cache/restore@v4
+        with:
+          path: state
+          key: termin-state-${{ github.run_id }}
+          restore-keys: |
+            termin-state-
+
+      - name: Termine pruefen
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          STATE_FILE: state/notified.json
+          TEST_PING: ${{ (github.event_name == 'workflow_dispatch' && inputs.test_ping) && '1' || '' }}
+        run: python check.py
+
+      - name: Merker speichern
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state
+          key: termin-state-${{ github.run_id }}

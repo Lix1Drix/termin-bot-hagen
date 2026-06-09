@@ -1,0 +1,82 @@
+============================================================
+ Cloud-Bot bei GitHub Actions einrichten (laeuft ohne PC)
+============================================================
+
+Ergebnis: Der Bot laeuft rund um die Uhr kostenlos auf GitHubs
+Servern und prueft ca. alle 5-15 Minuten. Bei einem freien Termin
+im Fenster (16.06.-19.06.) bekommst du eine Telegram-Nachricht -
+auch wenn dein PC aus ist.
+
+Die beiden Dateien, die du hochlaedst, liegen schon fertig hier:
+  - check.py
+  - .github\workflows\termin.yml
+Du oeffnest sie einfach, kopierst den Inhalt (Strg+A, Strg+C) und
+fuegst ihn in GitHub ein.
+
+
+SCHRITT 1 - GitHub-Konto + Repository anlegen
+------------------------------------------------------------
+1. github.com oeffnen -> "Sign up" -> kostenloses Konto anlegen
+   (E-Mail bestaetigen nicht vergessen).
+2. Oben rechts auf das "+" -> "New repository".
+3. Repository name: z.B.  termin-bot-hagen
+4. WICHTIG: auf "Public" stellen (oeffentlich).
+   Grund: nur damit ist die Cloud-Ausfuehrung unbegrenzt gratis.
+   Dein Telegram-Zugang kommt NICHT in den Code, sondern verschluesselt
+   in die "Secrets" (Schritt 4) - das ist sicher.
+5. "Create repository" klicken.
+
+
+SCHRITT 2 - Datei check.py hochladen
+------------------------------------------------------------
+1. Im neuen Repo: "Add file" -> "Create new file".
+2. Als Dateiname oben eingeben:  check.py
+3. check.py (auf deinem PC) im Editor oeffnen, alles markieren
+   (Strg+A), kopieren (Strg+C), und in das grosse Feld einfuegen.
+4. Unten "Commit changes" klicken.
+
+
+SCHRITT 3 - Datei fuer den Zeitplan hochladen
+------------------------------------------------------------
+1. Wieder "Add file" -> "Create new file".
+2. Als Dateiname GENAU eingeben (mit Schraegstrichen):
+       .github/workflows/termin.yml
+   (GitHub legt die Ordner dabei automatisch an.)
+3. Inhalt von termin.yml (auf deinem PC) komplett einfuegen.
+4. "Commit changes" klicken.
+
+
+SCHRITT 4 - Telegram-Zugang als "Secrets" hinterlegen
+------------------------------------------------------------
+1. Im Repo oben auf "Settings".
+2. Links: "Secrets and variables" -> "Actions".
+3. "New repository secret":
+      Name:   TELEGRAM_BOT_TOKEN
+      Secret: (dein Bot-Token)
+   Speichern.
+4. Nochmal "New repository secret":
+      Name:   TELEGRAM_CHAT_ID
+      Secret: (deine Chat-ID)
+   Speichern.
+
+
+SCHRITT 5 - Testlauf starten
+------------------------------------------------------------
+1. Oben auf den Reiter "Actions".
+2. Falls gefragt: Workflows aktivieren bestaetigen.
+3. Links "Termin-Bot Hagen" anklicken.
+4. Rechts "Run workflow" -> Haken bei Test-Nachricht lassen ->
+   gruener "Run workflow"-Knopf.
+5. Nach ~1 Minute solltest du eine Telegram-Nachricht bekommen:
+   "[Test] Cloud-Bot Hagen laeuft ...".
+   -> Dann laeuft alles, und der Bot meldet sich automatisch,
+      sobald ein Termin frei wird.
+
+
+FERTIG.
+Ab dann laeuft der Bot von selbst alle paar Minuten weiter -
+ohne dass dein PC an sein muss.
+
+Aendern willst du spaeter mal das Datum/Fenster? -> in check.py
+(im Repo direkt online editierbar) die Zeilen FROM_DATE / CUTOFF_DATE
+anpassen und "Commit" druecken.
