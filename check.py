@@ -44,10 +44,17 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/120.0 Safari/537.36")
 ALL_IDS = list(range(5704, 5720))   # 5704..5719 (alle Felder muessen mit)
 
-TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
-CHAT  = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+
+def _clean(v):
+    # entfernt Leerzeichen/Zeilenumbrueche UND ein evtl. vorangestelltes BOM (﻿),
+    # das beim Setzen der Secrets unter Windows entstehen kann.
+    return (v or "").strip("﻿ \t\r\n")
+
+
+TOKEN = _clean(os.environ.get("TELEGRAM_BOT_TOKEN", ""))
+CHAT  = _clean(os.environ.get("TELEGRAM_CHAT_ID", ""))
 STATE_FILE = os.environ.get("STATE_FILE", "state/notified.json")
-TEST_PING  = os.environ.get("TEST_PING", "").strip().lower() in ("1", "true", "yes")
+TEST_PING  = _clean(os.environ.get("TEST_PING", "")).lower() in ("1", "true", "yes")
 
 FROM   = datetime.strptime(FROM_DATE, "%d.%m.%Y")
 CUTOFF = datetime.strptime(CUTOFF_DATE, "%d.%m.%Y")
@@ -126,8 +133,6 @@ def save_state(keys):
 def main():
     print(f"Pruefe Fenster {FROM:%d.%m.%Y} - {LAST_DAY:%d.%m.%Y} "
           f"({len(CONCERNS)} Anliegen)")
-    print(f"DEBUG: token_len={len(TOKEN)} (erwartet 46) chat_len={len(CHAT)} "
-          f"t_head={TOKEN[:5]!r} t_tail={TOKEN[-3:]!r} chat={CHAT!r}")
     notified = load_state()
     hits, summary, errors = [], [], 0
 
