@@ -14,6 +14,7 @@ import re
 import sys
 import json
 import time
+import html
 from datetime import datetime, timedelta
 
 import requests
@@ -60,6 +61,9 @@ FROM   = datetime.strptime(FROM_DATE, "%d.%m.%Y")
 CUTOFF = datetime.strptime(CUTOFF_DATE, "%d.%m.%Y")
 LAST_DAY = CUTOFF - timedelta(days=1)
 
+WD = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]   # deutsche Wochentage
+FIRE_EFFECT = "5104841245755180586"               # Telegram-Nachrichteneffekt 🔥
+
 
 def get_suggest(cid):
     """Fuehrt den 3-Schritt-Ablauf aus und gibt das HTML der Terminseite zurueck."""
@@ -96,18 +100,36 @@ def free_days(html):
     return res
 
 
-def telegram(text):
+def telegram(text, button_url=None, effect_id=None):
+    """Sendet eine HTML-Nachricht. Optional mit Buchungs-Button und Effekt.
+    Faellt der Effekt aus, wird ohne Effekt erneut gesendet (Nachricht kommt sicher an)."""
     if not TOKEN or not CHAT:
         print("  [WARN] Telegram nicht konfiguriert (TOKEN/CHAT fehlen).")
         return False
-    try:
-        r = requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-                          data={"chat_id": CHAT, "text": text}, timeout=20)
-        if r.json().get("ok"):
-            return True
-        print("  [WARN] Telegram-Antwort:", r.text)
-    except Exception as e:
-        print("  [WARN] Telegram-Fehler:", e)
+    base = {
+        "chat_id": CHAT,
+        "text": text,
+        "parse_mode": "HTML",
+        "disable_web_page_preview": "true",
+    }
+    if button_url:
+        base["reply_markup"] = json.dumps(
+            {"inline_keyboard": [[{"text": "🔥  JETZT BUCHEN  🔥", "url": button_url}]]}
+        )
+    # 1. Versuch mit Effekt, 2. Versuch ohne (falls Effekt abgelehnt wird)
+    attempts = [effect_id, None] if effect_id else [None]
+    for eff in attempts:
+        d = dict(base)
+        if eff:
+            d["message_effect_id"] = eff
+        try:
+            r = requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+                              data=d, timeout=20)
+            if r.json().get("ok"):
+                return True
+            print("  [WARN] Telegram-Antwort:", r.text)
+        except Exception as e:
+            print("  [WARN] Telegram-Fehler:", e)
     return False
 
 
@@ -161,20 +183,33 @@ def main():
 
     if new:
         new.sort(key=lambda x: x[1])
-        lines = [f"- {n}: {d:%d.%m.%Y} ({c} Zeiten frei)" for n, d, c in new]
-        msg = (f"FREIER TERMIN Hagen ({FROM:%d.%m.%Y} - {LAST_DAY:%d.%m.%Y})!\n"
-               + "\n".join(lines) + f"\n\nJetzt buchen: {BOOK_URL}")
-        print("TREFFER -> sende Telegram")
-        telegram(msg)
+        blocks = []
+        for n, d, c in new:
+            blocks.append(f"🚗 <b>{html.escape(n)}</b>\n"
+                          f"📅 <b>{WD[d.weekday()]}, {d:%d.%m.%Y}</b> · "
+                          f"<b>{c}</b> freie Uhrzeiten")
+        msg = (
+            "‼️🚨 <b>TERMIN-ALARM HAGEN</b> 🚨‼️\n"
+            "━━━━━━━━━━━━━━━━━\n"
+            "🎯 <b>Ein Termin ist FREI geworden!</b>\n\n"
+            + "\n".join(blocks)
+            + "\n📍 Freiheitstr. 3, 58119 Hagen\n\n"
+            "⏱️ <i>Jede Sekunde zählt – sei schneller als die anderen!</i>\n"
+            "━━━━━━━━━━━━━━━━━\n"
+            "👇 <b>Sofort sichern:</b>"
+        )
+        print("TREFFER -> sende Telegram (Feuer-Effekt)")
+        telegram(msg, button_url=BOOK_URL, effect_id=FIRE_EFFECT)
     else:
         print("Kein Treffer im Zeitfenster.")
 
     save_state(cur_keys)
 
     if TEST_PING:
-        telegram(f"[Test] Cloud-Bot Hagen laeuft. Fenster "
-                 f"{FROM:%d.%m.}-{LAST_DAY:%d.%m.}.\nAktueller Status:\n"
-                 + "\n".join(summary))
+        telegram("✅ <b>Cloud-Bot Hagen läuft</b>\n\n"
+                 f"📅 Überwacht: <b>{FROM:%d.%m.}–{LAST_DAY:%d.%m.%Y}</b>\n"
+                 "🔎 Aktueller Status:\n"
+                 + html.escape("\n".join(summary)))
 
     # Wenn ALLE Anliegen blockiert wurden -> als Fehler melden (Action faellt auf)
     if errors == len(CONCERNS):
