@@ -126,6 +126,8 @@ def save_state(keys):
 def main():
     print(f"Pruefe Fenster {FROM:%d.%m.%Y} - {LAST_DAY:%d.%m.%Y} "
           f"({len(CONCERNS)} Anliegen)")
+    print(f"DEBUG: token_len={len(TOKEN)} (erwartet 46) chat_len={len(CHAT)} "
+          f"t_head={TOKEN[:5]!r} t_tail={TOKEN[-3:]!r} chat={CHAT!r}")
     notified = load_state()
     hits, summary, errors = [], [], 0
 
