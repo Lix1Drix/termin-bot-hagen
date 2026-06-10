@@ -22,7 +22,7 @@ import requests
 # ----------------------------- Einstellungen -------------------------------
 
 # Zeitfenster: Termine AB FROM_DATE (einschliesslich) BIS VOR CUTOFF_DATE.
-FROM_DATE   = "16.06.2026"   # Dienstag (zaehlt mit)
+FROM_DATE   = "15.06.2026"   # Montag (zaehlt mit)
 CUTOFF_DATE = "20.06.2026"   # Samstag, exklusiv -> letzter Tag = Freitag 19.06.
 
 # Welche Anliegen pruefen (Id, Anzeigename). Ausserbetriebsetzung (5707) ist raus.
