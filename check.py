@@ -85,7 +85,7 @@ def get_suggest(cid):
 
 
 def free_days(html):
-    """Liefert Liste (datum, anzahl_freie_slots) fuer Tage mit freien Terminen."""
+    """Liefert Liste (datum, [uhrzeiten]) fuer Tage mit freien Terminen."""
     res = []
     if not html:
         return res
@@ -94,9 +94,10 @@ def free_days(html):
         start = m.start()
         end = ms[i + 1].start() if i + 1 < len(ms) else len(html)
         section = html[start:end]
-        n = len(re.findall(r'class="suggestion_form"', section))
-        if n > 0:
-            res.append((datetime.strptime(m.group(1), "%d.%m.%Y"), n))
+        # freie Slots stecken in <form class="suggestion_form">...<button>HH:MM</button>
+        times = re.findall(r'class="suggestion_form".*?>(\d{1,2}:\d{2})<', section, re.S)
+        if times:
+            res.append((datetime.strptime(m.group(1), "%d.%m.%Y"), times))
     return res
 
 
@@ -170,9 +171,9 @@ def main():
         else:
             earliest = min(d for d, _ in fd)
             summary.append(f"{name}: ab {earliest:%d.%m.}")
-            for d, n in fd:
+            for d, times in fd:
                 if FROM <= d < CUTOFF:
-                    hits.append((name, d, n))
+                    hits.append((name, d, times))
         time.sleep(1.0)
 
     print("Status | " + " | ".join(summary) +
@@ -184,10 +185,14 @@ def main():
     if new:
         new.sort(key=lambda x: x[1])
         blocks = []
-        for n, d, c in new:
+        for n, d, times in new:
+            shown = times[:14]
+            more = len(times) - len(shown)
+            tline = ", ".join(shown) + (f"  …(+{more})" if more > 0 else "")
             blocks.append(f"🚗 <b>{html.escape(n)}</b>\n"
                           f"📅 <b>{WD[d.weekday()]}, {d:%d.%m.%Y}</b> · "
-                          f"<b>{c}</b> freie Uhrzeiten")
+                          f"<b>{len(times)}</b> frei\n"
+                          f"🕐 {tline}")
         msg = (
             "‼️🚨 <b>TERMIN-ALARM HAGEN</b> 🚨‼️\n"
             "━━━━━━━━━━━━━━━━━\n"
