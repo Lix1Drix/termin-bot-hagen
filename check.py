@@ -160,12 +160,12 @@ def main():
     hits, summary, errors = [], [], 0
 
     for cid, name in CONCERNS:
-        html = get_suggest(cid)
-        if re.search(r"Kein(e)? g.ltige[rn]? (Anliegen|Standort|Mandant)", html):
+        page = get_suggest(cid)
+        if re.search(r"Kein(e)? g.ltige[rn]? (Anliegen|Standort|Mandant)", page):
             print(f"  [WARN] {name}: Sitzungs-/Schutzfehler")
             errors += 1
             continue
-        fd = free_days(html)
+        fd = free_days(page)
         if not fd:
             summary.append(f"{name}: keine")
         else:
